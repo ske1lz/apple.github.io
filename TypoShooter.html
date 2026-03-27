@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TypoMaster — тренажер быстрой печати</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #0f0f1a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', 'Fira Code', 'JetBrains Mono', monospace;
+            padding: 20px;
+        }
+
+        .game-wrapper {
+            max-width: 1300px;
+            width: 100%;
+        }
+
+        .game-container {
+            background: rgba(15, 15, 20, 0.8);
+            backdrop-filter: blur(2px);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 20px;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.4);
+            cursor: crosshair;
+            background: #010104;
+        }
+
+        .controls-panel {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(8, 8, 12, 0.9);
+            border-radius: 20px;
+            padding: 16px 20px;
+            border: 1px solid #1e1e2a;
+        }
+
+        .mode-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            background: #12121a;
+            border: 1px solid #2a2a35;
+            color: #8b8da3;
+            font-family: monospace;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        .mode-btn.active {
+            background: #2a5f6e;
+            border-color: #5fc3e0;
+            color: white;
+            box-shadow: 0 0 12px rgba(95,195,224,0.3);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: #1e1e2a;
+            border-color: #4a4a60;
+            color: #ccc;
+        }
+
+        .lang-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .lang-btn {
+            background: #12121a;
+            border: 1px solid #2a2a35;
+            color: #8b8da3;
+            padding: 8px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .lang-btn.active {
+            background: #4a2a5e;
+            border-color: #b47cff;
+            color: white;
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            display: flex;
+            gap: 6px;
+            align-items: baseline;
+        }
+
+        .stat-label {
+            color: #6c6f85;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            color: #e4e4e7;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #0c0c12;
+            padding: 5px 16px;
+            border-radius: 60px;
+            border: 1px solid #252530;
+        }
+
+        .speed-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #8b8da3;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .speed-label span:first-child {
+            font-size: 1rem;
+        }
+
+        input[type="range"] {
+            width: 140px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #252530;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #5fc3e0;
+            cursor: pointer;
+            box-shadow: 0 0 8px #5fc3e0;
+            border: none;
+        }
+
+        .speed-value {
+            min-width: 45px;
+            color: #5fc3e0;
+            font-weight: bold;
+            font-size: 0.85rem;
+            background: #12121a;
+            padding: 4px 8px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .input-area {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #08080c;
+            border-radius: 60px;
+            padding: 6px 6px 6px 24px;
+            border: 1px solid #252530;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #b9f2ff;
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            padding: 14px 0;
+            outline: none;
+            letter-spacing: 0.5px;
+        }
+
+        .input-area input::placeholder {
+            color: #2c2e3a;
+            font-size: 0.9rem;
+        }
+
+        .accuracy {
+            background: #12121a;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #8b8da3;
+            font-family: monospace;
+        }
+
+        button {
+            background: #1a1a24;
+            border: 1px solid #2d2d3a;
+            color: #ccc;
+            font-family: monospace;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        button:hover {
+            background: #2a2a36;
+            border-color: #5f5f7a;
+            transform: scale(0.98);
+        }
+
+        .message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1c1c28;
+            backdrop-filter: blur(10px);
+            padding: 10px 28px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            color: #aaf0ff;
+            font-family: monospace;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            border: 1px solid #3a3a4a;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1000px) {
+            .controls-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .stats {
+                justify-content: center;
+            }
+            .speed-control {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1100" height="550"></canvas>
+
+        <div class="controls-panel">
+            <div class="mode-group">
+                <button class="mode-btn" data-mode="letter1">🔤 1 БУКВА</button>
+                <button class="mode-btn" data-mode="letter2">🔡 2 БУКВЫ</button>
+                <button class="mode-btn" data-mode="word1" id="word1Btn">📝 1 СЛОВО</button>
+                <button class="mode-btn" data-mode="word3">📚 3 СЛОВА</button>
+            </div>
+            <div class="lang-group">
+                <button class="lang-btn" data-lang="ru">🇷🇺 РУС</button>
+                <button class="lang-btn" data-lang="en">🇬🇧 ENG</button>
+            </div>
+            
+            <div class="speed-control">
+                <div class="speed-label">
+                    <span>🐌</span>
+                    <span>СКОРОСТЬ</span>
+                    <span>🐇</span>
+                </div>
+                <input type="range" id="speedSlider" min="0.3" max="2.2" step="0.02" value="1.0">
+                <div class="speed-value" id="speedValue">100%</div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat"><span class="stat-label">🎯 ОЧКИ</span><span class="stat-value" id="scoreValue">0</span></div>
+                <div class="stat"><span class="stat-label">⚡ КОМБО</span><span class="stat-value" id="comboValue">0</span></div>
+                <div class="stat"><span class="stat-label">🎯 ТОЧНОСТЬ</span><span class="stat-value" id="accuracyValue">100</span><span class="stat-label">%</span></div>
+                <div class="stat"><span class="stat-label">🏆 РЕКОРД</span><span class="stat-value" id="highscoreValue">0</span></div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="wordInput" placeholder="⚡ печатай и уничтожай..." autocomplete="off" autofocus>
+            <div class="accuracy" id="inputHint">готов к набору</div>
+            <button id="resetBtn">⟳ РЕСТАРТ</button>
+        </div>
+    </div>
+    <div id="toastMsg" class="message"></div>
+</div>
+
+<script>
+    // ==================== ОГРОМНАЯ РАСШИРЕННАЯ БАЗА СЛОВ (500+ элементов) ====================
+    const WORDS_DB = {
+        ru: {
+            letter1: ['А','Б','В','Г','Д','Е','Ё','Ж','З','И','Й','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Щ','Ъ','Ы','Ь','Э','Ю','Я'],
+            letter2: ['АБ','АВ','АГ','АД','АК','АМ','АН','АП','АР','АТ','АЦ','БА','БЕ','БО','БЫ','ВА','ВЕ','ВО','ВЫ','ГА','ГЕ','ГО','ДА','ДЕ','ДО','ДУ','ЕС','ЕТ','ЖА','ЖЕ','ЗА','ЗЕ','ЗО','ИЗ','ИМ','КА','КО','ЛА','ЛЕ','ЛО','МА','МЕ','МО','МЫ','НА','НЕ','НО','НУ','ОБ','ОД','ОК','ОМ','ОН','ОП','ОС','ОТ','ПА','ПЕ','ПО','ПР','РА','РЕ','РО','РУ','СА','СЕ','СО','СУ','ТА','ТЕ','ТО','ТР','УЖ','УМ','УС','ФА','ХА','ЦА','ЧА','ЧЕ','ША','ЩА','ЭТ','ЮР','ЯР'],
+            word1: [
+                'КОТ','ДОМ','ЛЕС','СОЛНЦЕ','МАШИНА','РАБОТА','ПРИВЕТ','ДРУГ','КНИГА','СТОЛ','ОКНО','ДВЕРЬ','МЫШЬ','КЛАВИАТУРА','МОНИТОР','ПРОГРАММА','РАЗРАБОТЧИК','САЙТ','БРАУЗЕР','ИНТЕРНЕТ','СЕРВЕР','КЛИЕНТ','ДАННЫЕ','КОД','АЛГОРИТМ','ФУНКЦИЯ','ПЕРЕМЕННАЯ','ЦИКЛ','УСЛОВИЕ','МАССИВ','СТРОКА','ЧИСЛО','ТЕКСТ','ЭКРАН','КНОПКА','МЫШКА','КЛАВИША','ПРОЦЕССОР','ПАМЯТЬ','ДИСК','ФАЙЛ','ПАПКА','СИСТЕМА','ПРОГРАММИСТ','ДИЗАЙН','СТИЛЬ','ЦВЕТ','ФОН','ШРИФТ','АНИМАЦИЯ','БЛОГ','ФОРУМ','ЧАТ','ЗВУК','ВИДЕО','ИЗОБРАЖЕНИЕ','ТАБЛИЦА','ГРАФИК','СХЕМА','ПРОЕКТ','ЗАДАЧА','РЕШЕНИЕ','ВОПРОС','ОТВЕТ','УРОК','ТРЕНАЖЕР','НАВЫК','СКОРОСТЬ','ТОЧНОСТЬ','РЕЗУЛЬТАТ','МОНИТОРИНГ','ОПТИМИЗАЦИЯ','АРХИТЕКТУРА','КОМПЬЮТЕР','НОУТБУК','СМАРТФОН','ПЛАНШЕТ','РОБОТ','ТЕХНОЛОГИЯ','ИННОВАЦИЯ','РАЗВИТИЕ','ОБУЧЕНИЕ','ПРАКТИКА','МАСТЕРСТВО','ТВОРЧЕСТВО','ВДОХНОВЕНИЕ','МОТИВАЦИЯ','УСПЕХ','ПОБЕДА','РЕКОРД','ДОСТИЖЕНИЕ','ЦЕЛЬ','МЕЧТА','СВОБОДА','СЧАСТЬЕ','ЭНЕРГИЯ','СИЛА','МУДРОСТЬ','ЗНАНИЕ','ОПЫТ','МУДРОСТЬ','ГЕНИЙ','ТАЛАНТ','СПОСОБНОСТЬ','ПОТЕНЦИАЛ','БУДУЩЕЕ','ВОЗМОЖНОСТЬ','ПЕРСПЕКТИВА'
+            ],
+            word3: [
+                'КОТ И МЫШЬ','ДОМ У ОЗЕРА','БЫСТРЫЙ ПЕЧАТНИК','КРАСНЫЙ АВТОМОБИЛЬ','ПРОГРАММИРОВАНИЕ ЭТО КРУТО','УЧИТЬСЯ НИКОГДА НЕ ПОЗДНО','СОВРЕМЕННЫЕ ТЕХНОЛОГИИ','РАЗРАБОТКА ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ','ВЕБ РАЗРАБОТЧИК ФРИЛАНС','КЛАВИАТУРА МЫШЬ МОНИТОР','ОПЕРАЦИОННАЯ СИСТЕМА ЛИНУКС','БЫСТРАЯ ПЕЧАТЬ ДЛЯ ВСЕХ','ТРЕНАЖЕР КЛАВИАТУРЫ ОНЛАЙН','МИНИМАЛИЗМ ЭТО СТИЛЬ','КОД ДОЛЖЕН БЫТЬ ЧИСТЫМ','ФУНКЦИОНАЛЬНОЕ ПРОГРАММИРОВАНИЕ','ОБЪЕКТНО ОРИЕНТИРОВАННЫЙ ПОДХОД','БАЗЫ ДАННЫХ SQL','ФРОНТЕНД БЭКЕНД ФУЛЛСТЕК','ДЖАВАСКРИПТ ПИТОН РАСТ','ПРОСТОТА И МОЩЬ','ТОЧНОСТЬ И СКОРОСТЬ','УСПЕХ ПРИХОДИТ С ПРАКТИКОЙ','ДОСТИЖЕНИЕ ВЫСОТ В IT','СОВРЕМЕННЫЙ ВЕБ ДИЗАЙН','КРОССПЛАТФОРМЕННАЯ РАЗРАБОТКА','ОБЛАЧНЫЕ ТЕХНОЛОГИИ БУДУЩЕГО','ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ И МАШИННОЕ ОБУЧЕНИЕ','БЛОКЧЕЙН И КРИПТОВАЛЮТЫ','КИБЕРБЕЗОПАСНОСТЬ ЗАЩИТА ДАННЫХ','ЮЗАБИЛИТИ И ИНТЕРФЕЙСЫ','АДАПТИВНЫЙ ДИЗАЙН САЙТОВ','ОПТИМИЗАЦИЯ ПРОИЗВОДИТЕЛЬНОСТИ','ДЕБАГГИНГ И ТЕСТИРОВАНИЕ','РЕФАКТОРИНГ КОДА','УПРАВЛЕНИЕ ВЕРСИЯМИ GIT','АГИЛЬНЫЕ МЕТОДОЛОГИИ РАЗРАБОТКИ','СКРАМ КАНБАН ЛИДЕРСТВО','КОМАНДНАЯ РАБОТА И КОММУНИКАЦИЯ','ТАЙМ МЕНЕДЖМЕНТ ПРОДУКТИВНОСТЬ','СТРЕССОУСТОЙЧИВОСТЬ И ФОКУС','КРЕАТИВНОСТЬ И НЕСТАНДАРТНОЕ МЫШЛЕНИЕ','АНАЛИТИКА И МЕТРИКИ','ПОЛЬЗОВАТЕЛЬСКИЙ ОПЫТ И ИНТЕРФЕЙС','АВТОМАТИЗАЦИЯ РУТИННЫХ ЗАДАЧ','ДОКУМЕНТАЦИЯ ПРОЕКТА','РАЗВЕРТЫВАНИЕ НА СЕРВЕРАХ','ДОСТАВКА ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ','НЕПРЕРЫВНАЯ ИНТЕГРАЦИЯ','МОНИТОРИНГ И ЛОГИРОВАНИЕ','ОШИБКИ И ИСКЛЮЧЕНИЯ','ПАТТЕРНЫ ПРОЕКТИРОВАНИЯ','МИКРОСЕРВИСНАЯ АРХИТЕКТУРА','КОНТЕЙНЕРИЗАЦИЯ ДОКЕР','ОРКЕСТРАЦИЯ КУБЕРНЕТИС','БОЛЬШИЕ ДАННЫЕ HADOOP','ВИЗУАЛИЗАЦИЯ ДАННЫХ ГРАФИКИ','МОБИЛЬНАЯ РАЗРАБОТКА IOS АНДРОИД','ДЕСКТОПНЫЕ ПРИЛОЖЕНИЯ ЭЛЕКТРОН','ИГРОВАЯ ИНДУСТРИЯ ЮНИТИ','ВИРТУАЛЬНАЯ РЕАЛЬНОСТЬ АР','ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ МЕТАВСЕЛЕННАЯ','РОБОТОТЕХНИКА И АВТОМАТИЗАЦИЯ','ИНТЕРНЕТ ВЕЩЕЙ IOT','УМНЫЙ ДОМ И УМНЫЕ УСТРОЙСТВА','БЕСПИЛОТНЫЕ АВТОМОБИЛИ','БИОТЕХНОЛОГИИ И ГЕНЕТИКА','КОСМИЧЕСКИЕ ТЕХНОЛОГИИ','НОВЫЕ МАТЕРИАЛЫ И НАНОТЕХНОЛОГИИ','ЭКОЛОГИЯ И УСТОЙЧИВОЕ РАЗВИТИЕ','ВОЗОБНОВЛЯЕМАЯ ЭНЕРГЕТИКА','ЗЕЛЕНЫЕ ТЕХНОЛОГИИ БУДУЩЕГО','ОБРАЗОВАНИЕ И САМОРАЗВИТИЕ','КАРЬЕРНЫЙ РОСТ И ПРОФЕССИОНАЛИЗМ','ЛИДЕРСТВО И УПРАВЛЕНИЕ','ФИНАНСОВАЯ ГРАМОТНОСТЬ И ИНВЕСТИЦИИ','ПРЕДПРИНИМАТЕЛЬСТВО И БИЗНЕС','СТАРТАПЫ И ИННОВАЦИИ','МАРКЕТИНГ И ПРОДВИЖЕНИЕ','БРЕНДИНГ И КОММУНИКАЦИИ','ПСИХОЛОГИЯ И САМОРАЗВИТИЕ','ЗДОРОВЬЕ И СПОРТ','ПИТАНИЕ И ФИТНЕС','МЕДИТАЦИЯ И ОСОЗНАННОСТЬ','ПУТЕШЕСТВИЯ И ОТКРЫТИЯ','КУЛЬТУРА И ИСКУССТВО','МУЗЫКА И ТВОРЧЕСТВО','ЛИТЕРАТУРА И ПОЭЗИЯ','КИНО И ТЕАТР','ФОТОГРАФИЯ И ВИДЕОГРАФИЯ','КУЛИНАРИЯ И ГАСТРОНОМИЯ','МОДА И СТИЛЬ','ДИЗАЙН ИНТЕРЬЕРОВ','АРХИТЕКТУРА И ГРАДОСТРОИТЕЛЬСТВО'
+            ]
+        },
+        en: {
+            letter1: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+            letter2: ['AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BE','BI','BO','BU','CA','CE','CI','CO','CU','DA','DE','DI','DO','DU','EA','EB','EC','ED','EF','EG','EH','EI','EJ','EK','EL','EM','EN','EO','EP','EQ','ER','ES','ET','EU','EV','EW','EX','EY','EZ','FA','FE','FI','FO','FU','GA','GE','GI','GO','GU','HA','HE','HI','HO','HU','IA','IB','IC','ID','IE','IF','IG','IH','II','IJ','IK','IL','IM','IN','IO','IP','IQ','IR','IS','IT','IU','IV','IW','IX','IY','IZ','JA','JE','JI','JO','JU','KA','KE','KI','KO','KU','LA','LE','LI','LO','LU','MA','ME','MI','MO','MU','NA','NE','NI','NO','NU','OA','OB','OC','OD','OE','OF','OG','OH','OI','OJ','OK','OL','OM','ON','OO','OP','OQ','OR','OS','OT','OU','OV','OW','OX','OY','OZ','PA','PE','PI','PO','PU','QA','QE','QI','QO','QU','RA','RE','RI','RO','RU','SA','SE','SI','SO','SU','TA','TE','TI','TO','TU','UA','UB','UC','UD','UE','UF','UG','UH','UI','UJ','UK','UL','UM','UN','UO','UP','UQ','UR','US','UT','UU','UV','UW','UX','UY','UZ','VA','VE','VI','VO','VU','WA','WE','WI','WO','WU','XA','XE','XI','XO','XU','YA','YE','YI','YO','YU','ZA','ZE','ZI','ZO','ZU'],
+            word1: [
+                'CAT','DOG','SUN','CODE','HTML','CSS','JAVASCRIPT','PYTHON','RUST','GO','RUBY','PHP','SWIFT','KOTLIN','REACT','VUE','ANGULAR','NODE','EXPRESS','MONGO','SQL','GIT','GITHUB','DEVELOPER','PROGRAMMER','KEYBOARD','MONITOR','MOUSE','COMPUTER','LAPTOP','SCREEN','PIXEL','FONT','STYLE','COLOR','ANIMATION','WEBSITE','SERVER','CLIENT','DATABASE','FUNCTION','VARIABLE','LOOP','ARRAY','OBJECT','STRING','NUMBER','BOOLEAN','CLASS','METHOD','PROPERTY','EVENT','CLICK','TYPE','SPEED','ACCURACY','PRACTICE','SKILL','MASTER','LEARNING','PROGRESS','TECHNOLOGY','INNOVATION','DEVELOPMENT','SOFTWARE','HARDWARE','NETWORK','SECURITY','CLOUD','ARTIFICIAL','INTELLIGENCE','MACHINE','LEARNING','DATA','SCIENCE','ANALYTICS','ALGORITHM','OPTIMIZATION','ARCHITECTURE','FRAMEWORK','LIBRARY','API','INTERFACE','USER','EXPERIENCE','DESIGN','CREATIVITY','PRODUCTIVITY','AUTOMATION','DEBUGGING','TESTING','DEPLOYMENT','MONITORING','LOGGING','DOCUMENTATION','COLLABORATION','COMMUNICATION','LEADERSHIP','MANAGEMENT','STRATEGY','ANALYSIS','RESEARCH','SOLUTION','PROBLEM','SOLVING','INNOVATION','FUTURE','OPPORTUNITY','SUCCESS','ACHIEVEMENT','GOAL','DREAM','VISION','MISSION','VALUE','QUALITY','EXCELLENCE'
+            ],
+            word3: [
+                'FAST TYPING SKILL','CODE EVERY DAY','LEARN PROGRAMMING NOW','FULL STACK DEVELOPER','FRONTEND BACKEND DATABASE','JAVASCRIPT IS AWESOME','PYTHON AND RUST ARE GREAT','REACT VUE ANGULAR','CLOUD COMPUTING AI','MACHINE LEARNING DEEP','KEYBOARD TYPING MASTER','SPEED AND ACCURACY','PRACTICE MAKES PERFECT','NEVER STOP LEARNING','CODE CLEAN CODE FAST','MINIMALIST DESIGN STYLE','DARK THEME MONOSPACE','FUNCTIONAL PROGRAMMING','OBJECT ORIENTED DESIGN','ALGORITHMS DATA STRUCTURES','WEB DEVELOPMENT TRENDS','OPEN SOURCE COMMUNITY','GIT VERSION CONTROL','DEBUGGING AND TESTING','SOFTWARE ENGINEERING PRINCIPLES','ARTIFICIAL INTELLIGENCE REVOLUTION','CLOUD NATIVE APPLICATIONS','MICROSERVICES ARCHITECTURE PATTERN','CONTAINERIZATION WITH DOCKER','KUBERNETES ORCHESTRATION','DEVOPS CULTURE AUTOMATION','CI CD PIPELINES','AGILE METHODOLOGY SCRUM','TEAM COLLABORATION TOOLS','REMOTE WORK DIGITAL NOMAD','PRODUCT MANAGEMENT METRICS','USER CENTERED DESIGN','ACCESSIBILITY INCLUSION','PERFORMANCE OPTIMIZATION TECHNIQUES','SECURITY BEST PRACTICES','DATA PRIVACY PROTECTION','BLOCKCHAIN DECENTRALIZED SYSTEMS','INTERNET OF THINGS SMART DEVICES','AUGMENTED REALITY VIRTUAL','GAME DEVELOPMENT UNITY','MOBILE APPS IOS ANDROID','CROSS PLATFORM DEVELOPMENT','PROGRESSIVE WEB APPS','SERVERLESS COMPUTING','EDGE COMPUTING FOG','QUANTUM COMPUTING FUTURE','BIOTECHNOLOGY BREAKTHROUGHS','RENEWABLE ENERGY SOLAR WIND','SUSTAINABLE DEVELOPMENT GOALS','SPACE EXPLORATION MARS','ELECTRIC VEHICLES AUTONOMOUS','SMART CITIES URBAN PLANNING','DIGITAL TRANSFORMATION JOURNEY','CAREER GROWTH OPPORTUNITIES','LIFELONG LEARNING MINDSET','CREATIVE PROBLEM SOLVING','CRITICAL THINKING SKILLS','EMOTIONAL INTELLIGENCE AWARENESS','FINANCIAL LITERACY INVESTING','ENTREPRENEURIAL MINDSET STARTUP','GLOBAL COLLABORATION NETWORK','CULTURAL DIVERSITY INCLUSION','WORK LIFE BALANCE HARMONY','MENTAL HEALTH WELLBEING','PHYSICAL FITNESS HEALTHY','MINDFULNESS MEDITATION PRACTICE','TRAVEL EXPLORE DISCOVER','ART CREATIVITY EXPRESSION','MUSIC COMPOSITION PERFORMANCE','LITERATURE STORYTELLING NARRATIVE','CINEMA FILMMAKING ART','PHOTOGRAPHY VISUAL STORYTELLING','COOKING GASTRONOMY CUISINE','FASHION DESIGN TRENDS','ARCHITECTURE SPACES BUILDINGS'
+            ]
+        }
+    };
+
+    // ==================== ИГРОВЫЕ ПАРАМЕТРЫ ====================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 1100, H = 550;
+    canvas.width = W;
+    canvas.height = H;
+
+    let enemies = [];
+    let score = 0;
+    let combo = 0;
+    let totalTyped = 0;
+    let correctTyped = 0;
+    let highscore = localStorage.getItem('typo_highscore') ? parseInt(localStorage.getItem('typo_highscore')) : 0;
+    let gameOver = false;
+    let currentLang = 'ru';
+    let currentMode = 'word1';
+    
+    let speedMultiplier = 1.0;
+    
+    let spawnCounter = 0;
+    let currentSpawnDelay = 45;
+    let frame = 0;
+    let currentInput = "";
+    
+    const inputField = document.getElementById('wordInput');
+    const scoreSpan = document.getElementById('scoreValue');
+    const comboSpan = document.getElementById('comboValue');
+    const accuracySpan = document.getElementById('accuracyValue');
+    const highSpan = document.getElementById('highscoreValue');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValueSpan = document.getElementById('speedValue');
+    highSpan.innerText = highscore;
+    
+    function updateAccuracy() {
+        let accuracy = totalTyped === 0 ? 100 : Math.round((correctTyped / totalTyped) * 100);
+        accuracySpan.innerText = accuracy;
+        return accuracy;
+    }
+    
+    function getRandomWord() {
+        const db = WORDS_DB[currentLang][currentMode];
+        if (!db || db.length === 0) return currentMode === 'letter1' ? (currentLang === 'ru' ? 'А' : 'A') : 'TEST';
+        return db[Math.floor(Math.random() * db.length)];
+    }
+    
+    function getBaseSpeed() {
+        let base = 0.7;
+        if (currentMode === 'letter1') base = 0.9;
+        if (currentMode === 'letter2') base = 0.85;
+        if (currentMode === 'word1') base = 0.75;
+        if (currentMode === 'word3') base = 0.55;
+        return base * speedMultiplier;
+    }
+    
+    function spawnEnemy() {
+        if (gameOver) return;
+        const wordText = getRandomWord();
+        const yPos = 50 + Math.random() * (H - 120);
+        
+        const baseSpeed = getBaseSpeed();
+        const dynamicBonus = Math.min(0.8, score / 1500);
+        const finalSpeed = Math.min(baseSpeed + dynamicBonus, 3.5);
+        
+        enemies.push({
+            id: Math.random(),
+            word: currentLang === 'ru' ? wordText.toUpperCase() : wordText.toUpperCase(),
+            x: W - 30,
+            y: yPos,
+            speed: finalSpeed,
+        });
+    }
+    
+    function destroyEnemy(enemy) {
+        const index = enemies.indexOf(enemy);
+        if (index !== -1) {
+            enemies.splice(index, 1);
+            let points = 0;
+            if (currentMode === 'letter1') points = 5 + Math.floor(combo / 4);
+            else if (currentMode === 'letter2') points = 8 + Math.floor(combo / 3);
+            else if (currentMode === 'word1') points = 15 + Math.floor(combo / 2);
+            else if (currentMode === 'word3') points = 30 + combo;
+            
+            score += points;
+            combo++;
+            correctTyped++;
+            totalTyped++;
+            
+            showMessage(`+${points} очков | комбо x${combo}`, false);
+            
+            if (combo % 10 === 0 && combo > 0) {
+                showMessage(`✨ МАСТЕР! +${Math.floor(combo/2)} бонус`, false);
+                score += Math.floor(combo/2);
+            }
+            
+            updateUI();
+            updateAccuracy();
+        }
+    }
+    
+    function missEnemy() {
+        if (gameOver) return;
+        combo = 0;
+        totalTyped++;
+        updateAccuracy();
+        showMessage(`❌ пропуск! комбо сброшено`, true);
+        
+        if (score > 20) score = Math.max(0, score - 5);
+        updateUI();
+    }
+    
+    function updateUI() {
+        scoreSpan.innerText = score;
+        comboSpan.innerText = combo;
+        if (score > highscore) {
+            highscore = score;
+            highSpan.innerText = highscore;
+            localStorage.setItem('typo_highscore', highscore);
+            showMessage(`🏆 НОВЫЙ РЕКОРД! ${highscore}`, false);
+        }
+    }
+    
+    function tryMatchInput() {
+        if (gameOver || currentInput.length === 0) return;
+        
+        let matched = null;
+        for (let i = 0; i < enemies.length; i++) {
+            const e = enemies[i];
+            let compareWord = e.word;
+            let compareInput = currentInput.toUpperCase().trim();
+            
+            if (compareWord === compareInput) {
+                matched = e;
+                break;
+            }
+        }
+        
+        if (matched) {
+            destroyEnemy(matched);
+            currentInput = "";
+            inputField.value = "";
+            document.getElementById('inputHint').innerText = "✓ попадание!";
+            setTimeout(() => { if(!gameOver) document.getElementById('inputHint').innerText = "печатай..."; }, 250);
+        } else {
+            let anyStartsWith = enemies.some(e => e.word.startsWith(currentInput.toUpperCase()));
+            if (currentInput.length > 0 && !anyStartsWith) {
+                document.getElementById('inputHint').innerText = "❌ нет цели";
+                setTimeout(() => { if(!gameOver) document.getElementById('inputHint').innerText = "печатай..."; }, 400);
+            }
+        }
+    }
+    
+    function onInputChange(e) {
+        if (gameOver) {
+            inputField.value = "";
+            return;
+        }
+        let val = e.target.value;
+        
+        // 🔧 ИСПРАВЛЕНИЕ БАГА С ПРОБЕЛОМ: разрешаем пробелы в режиме word3
+        if (currentMode === 'word3') {
+            // в режиме фраз пробелы разрешены, просто убираем лишние
+            val = val.replace(/\s+/g, ' ').trim();
+        } else {
+            // в остальных режимах убираем все пробелы
+            val = val.replace(/\s/g, '');
+        }
+        
+        if (currentLang === 'ru') val = val.toUpperCase();
+        else val = val.toUpperCase();
+        
+        currentInput = val;
+        inputField.value = val;
+        tryMatchInput();
+    }
+    
+    function updateEnemies() {
+        if (gameOver) return;
+        for (let i = 0; i < enemies.length; i++) {
+            const e = enemies[i];
+            e.x -= e.speed;
+            if (e.x + 30 < 0) {
+                enemies.splice(i, 1);
+                missEnemy();
+                i--;
+            }
+        }
+    }
+    
+    function updateSpawner() {
+        if (gameOver) return;
+        let baseDelay = 38;
+        if (currentMode === 'letter1') baseDelay = 28;
+        if (currentMode === 'letter2') baseDelay = 32;
+        if (currentMode === 'word1') baseDelay = 42;
+        if (currentMode === 'word3') baseDelay = 65;
+        
+        let spawnSpeedFactor = Math.max(0.5, Math.min(1.8, 1 / speedMultiplier));
+        let adjustedDelay = baseDelay * spawnSpeedFactor;
+        
+        let dynamicDelay = Math.max(18, adjustedDelay - Math.floor(score / 400));
+        if (frame >= dynamicDelay) {
+            spawnEnemy();
+            if (currentMode === 'word3' && Math.random() < 0.2 && enemies.length < 4) spawnEnemy();
+            if (score > 500 && Math.random() < 0.15) spawnEnemy();
+            frame = 0;
+        } else {
+            frame++;
+        }
+    }
+    
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = "#12121c";
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < W; i += 45) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, H);
+            ctx.stroke();
+        }
+        
+        enemies.forEach(enemy => {
+            const word = enemy.word;
+            let fontSize = currentMode === 'word3' ? 18 : 22;
+            if (word.length > 20) fontSize = 14;
+            ctx.font = `bold ${fontSize}px 'Courier New'`;
+            const metrics = ctx.measureText(word);
+            const width = metrics.width + 28;
+            const height = 44;
+            const xPos = enemy.x - width;
+            const yPos = enemy.y - height/2;
+            
+            ctx.fillStyle = "#12121e";
+            ctx.fillRect(xPos, yPos, width, height);
+            
+            let borderColor = "#3c3c54";
+            if (currentInput.length > 0 && enemy.word.startsWith(currentInput)) borderColor = "#5fc3e0";
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(xPos, yPos, width, height);
+            
+            let textColor = "#d6d6ff";
+            if (currentInput.length > 0 && enemy.word.startsWith(currentInput)) textColor = "#9effcf";
+            ctx.fillStyle = textColor;
+            ctx.font = `bold ${fontSize}px 'Courier New'`;
+            ctx.fillText(word, xPos + 12, yPos + 30);
+        });
+        
+        ctx.beginPath();
+        ctx.moveTo(45, 0);
+        ctx.lineTo(45, H);
+        ctx.strokeStyle = "#ff4d6d";
+        ctx.setLineDash([6, 12]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        if (gameOver) {
+            ctx.font = "32px 'Courier New'";
+            ctx.fillStyle = "#ffffff40";
+            ctx.fillText("GAME OVER", W/2-110, H/2);
+            ctx.font = "14px monospace";
+            ctx.fillStyle = "#ffaa88";
+            ctx.fillText("нажми РЕСТАРТ", W/2-70, H/2+50);
+        }
+        
+        ctx.font = "10px monospace";
+        ctx.fillStyle = "#3a3a55";
+        let modeText = currentMode === 'letter1' ? '1 БУКВА' : currentMode === 'letter2' ? '2 БУКВЫ' : currentMode === 'word1' ? 'СЛОВА' : 'ФРАЗЫ';
+        let speedPercent = Math.round(speedMultiplier * 100);
+        let wordsCount = WORDS_DB[currentLang][currentMode]?.length || 0;
+        ctx.fillText(`${currentLang === 'ru' ? 'РУС' : 'ENG'} | ${modeText} | скорость: ${speedPercent}% | слов: ${wordsCount}`, 25, 25);
+    }
+    
+    function resetGame() {
+        gameOver = false;
+        enemies = [];
+        score = 0;
+        combo = 0;
+        totalTyped = 0;
+        correctTyped = 0;
+        currentInput = "";
+        inputField.value = "";
+        frame = 0;
+        updateUI();
+        updateAccuracy();
+        inputField.disabled = false;
+        inputField.placeholder = "⚡ печатай и уничтожай...";
+        inputField.focus();
+        document.getElementById('inputHint').innerText = "печатай...";
+        let speedPercent = Math.round(speedMultiplier * 100);
+        let wordsCount = WORDS_DB[currentLang][currentMode]?.length || 0;
+        showMessage(`🔄 НОВАЯ ИГРА | скорость: ${speedPercent}% | словарь: ${wordsCount} слов`, false);
+        for(let i=0;i<2;i++) spawnEnemy();
+    }
+    
+    function showMessage(text, isError) {
+        const toast = document.getElementById('toastMsg');
+        toast.style.color = isError ? '#ffaa99' : '#aaf0ff';
+        toast.innerText = text;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 1600);
+    }
+    
+    function setMode(mode) {
+        currentMode = mode;
+        resetGame();
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+    }
+    
+    function setLang(lang) {
+        currentLang = lang;
+        resetGame();
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+    }
+    
+    function updateSpeed() {
+        speedMultiplier = parseFloat(speedSlider.value);
+        let percent = Math.round(speedMultiplier * 100);
+        speedValueSpan.innerText = percent + '%';
+        
+        let speedText = '';
+        if (speedMultiplier < 0.6) speedText = '🐢 МЕДЛЕННО';
+        else if (speedMultiplier < 0.9) speedText = '🚶 СПОКОЙНО';
+        else if (speedMultiplier <= 1.1) speedText = '⚡ НОРМАЛЬНО';
+        else if (speedMultiplier <= 1.5) speedText = '💨 БЫСТРО';
+        else speedText = '🔥 ЭКСТРИМ';
+        
+        showMessage(`Скорость: ${percent}% — ${speedText}`, false);
+        
+        for (let enemy of enemies) {
+            let newBase = getBaseSpeed();
+            let dynamicBonus = Math.min(0.8, score / 1500);
+            let newSpeed = Math.min(newBase + dynamicBonus, 3.5);
+            enemy.speed = newSpeed;
+        }
+    }
+    
+    function gameLoop() {
+        if (!gameOver) {
+            updateEnemies();
+            updateSpawner();
+        }
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    function init() {
+        updateUI();
+        resetGame();
+        inputField.addEventListener('input', onInputChange);
+        document.getElementById('resetBtn').addEventListener('click', () => resetGame());
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMode(btn.dataset.mode));
+        });
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => setLang(btn.dataset.lang));
+        });
+        
+        speedSlider.addEventListener('input', updateSpeed);
+        
+        canvas.addEventListener('click', () => { if(!gameOver) inputField.focus(); });
+        inputField.focus();
+        setInterval(() => { if(!gameOver && document.activeElement !== inputField) inputField.focus(); }, 500);
+        gameLoop();
+    }
+    
+    init();
+</script>
+</body>
+</html>
